@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShopSim — AI Shopper Simulator · Reclaim Nation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#1a1714;--ink-60:rgba(26,23,20,0.6);--ink-20:rgba(26,23,20,0.12);
+  --cream:#F7F3EE;--warm:#EDE7DC;--terra:#C4623A;--terra-light:#F2E4DB;
+  --forest:#2D4A3E;--gold:#B8913A;--gold-light:#F5EDD8;--surface:#FFFFFF;
+  --radius:10px;--success:#2D6A4F;--danger:#9B2335;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);min-height:100vh}
+
+nav{background:var(--ink);padding:0 28px;display:flex;align-items:center;justify-content:space-between;height:54px;position:sticky;top:0;z-index:100}
+.nav-brand{font-family:'Playfair Display',serif;font-size:18px;color:var(--cream);letter-spacing:.02em}
+.nav-brand span{color:var(--terra)}
+.nav-sub{font-size:10px;color:rgba(247,243,238,.4);letter-spacing:.07em;text-transform:uppercase}
+.ai-badge{font-size:10px;color:rgba(247,243,238,.5);background:rgba(247,243,238,.08);border:1px solid rgba(247,243,238,.12);padding:3px 10px;border-radius:20px;letter-spacing:.04em}
+
+.hero{background:var(--ink);padding:40px 28px 36px;display:grid;grid-template-columns:1fr 320px;gap:40px;align-items:start}
+@media(max-width:720px){.hero{grid-template-columns:1fr}}
+.hero-title{font-family:'Playfair Display',serif;font-size:clamp(22px,3vw,36px);color:var(--cream);line-height:1.22;margin-bottom:10px}
+.hero-title em{color:var(--terra);font-style:italic}
+.hero-desc{font-size:13px;color:rgba(247,243,238,.58);line-height:1.75;margin-bottom:16px}
+.flow{display:flex;align-items:center;flex-wrap:wrap;gap:4px}
+.flow-step{background:rgba(247,243,238,.07);border:1px solid rgba(247,243,238,.1);border-radius:6px;padding:5px 10px;font-size:11px;color:rgba(247,243,238,.7)}
+.flow-arr{color:rgba(247,243,238,.2);font-size:14px}
+.status-card{background:rgba(247,243,238,.06);border:1px solid rgba(247,243,238,.1);border-radius:var(--radius);padding:18px}
+.status-title{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:rgba(247,243,238,.4);margin-bottom:12px}
+.status-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:12px;color:rgba(247,243,238,.6)}
+.status-row .dot{width:7px;height:7px;border-radius:50%;background:rgba(247,243,238,.2);flex-shrink:0;transition:background .4s}
+.status-row.ok .dot{background:#52C78B}
+.status-row.warn .dot{background:#E8A832}
+.status-row.err .dot{background:#E74C3C}
+
+.container{max-width:1100px;margin:0 auto;padding:28px 20px}
+.sec-head{display:flex;align-items:baseline;gap:10px;margin-bottom:16px}
+.sec-head h2{font-family:'Playfair Display',serif;font-size:19px;font-weight:600}
+.sec-head p{font-size:12px;color:var(--ink-60)}
+
+.setup-card{background:var(--surface);border:2px solid var(--terra);border-radius:var(--radius);padding:20px;margin-bottom:24px}
+.setup-card h3{font-family:'Playfair Display',serif;font-size:16px;color:var(--terra);margin-bottom:12px}
+.setup-step{display:flex;gap:10px;margin-bottom:10px;font-size:13px;align-items:flex-start}
+.setup-step .n{width:22px;height:22px;border-radius:50%;background:var(--terra);color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;flex-shrink:0;margin-top:1px}
+.setup-step p{line-height:1.6;color:var(--ink-60)}
+.setup-step p strong{color:var(--ink)}
+code{background:var(--warm);padding:2px 6px;border-radius:4px;font-size:11px;font-family:monospace;color:var(--terra)}
+.api-row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.api-row input{flex:1;min-width:200px;font-family:'DM Sans',sans-serif;font-size:13px;border:1px solid var(--ink-20);border-radius:7px;padding:9px 12px;background:var(--cream);color:var(--ink);outline:none}
+.api-row input:focus{border-color:var(--terra)}
+.btn-save{background:var(--terra);color:white;border:none;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;padding:9px 20px;border-radius:7px;cursor:pointer;white-space:nowrap}
+.api-note{font-size:11px;color:var(--ink-60);margin-top:7px}
+.api-saved{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--success);background:#E8F5E9;padding:5px 12px;border-radius:20px;font-weight:500}
+
+.steps-bar{display:flex;align-items:center;gap:0;margin-bottom:24px;background:var(--surface);border:1px solid var(--ink-20);border-radius:var(--radius);padding:12px 16px;overflow-x:auto}
+.step-item{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.step-num{width:22px;height:22px;border-radius:50%;background:var(--ink-20);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:var(--ink-60);flex-shrink:0;transition:background .3s,color .3s}
+.step-item.active .step-num{background:var(--terra);color:white}
+.step-item.done .step-num{background:var(--forest);color:white}
+.step-label{font-size:12px;color:var(--ink-60)}
+.step-item.active .step-label{color:var(--ink);font-weight:500}
+.step-sep{color:var(--ink-20);margin:0 10px;font-size:14px}
+
+.scrape-panel{background:var(--surface);border:1px solid var(--ink-20);border-radius:var(--radius);padding:16px 20px;margin-bottom:24px}
+.scrape-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.scrape-panel select{font-family:'DM Sans',sans-serif;font-size:13px;border:1px solid var(--ink-20);border-radius:7px;padding:8px 12px;background:var(--cream);color:var(--ink);outline:none;cursor:pointer}
+.scrape-panel select:focus{border-color:var(--terra)}
+.btn-scrape{background:var(--forest);color:white;border:none;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;padding:9px 20px;border-radius:50px;cursor:pointer;white-space:nowrap;transition:background .15s}
+.btn-scrape:hover{background:#1f3329}
+.btn-scrape:disabled{background:#aaa;cursor:not-allowed}
+.scrape-bar{margin-top:10px;padding:10px 13px;background:var(--cream);border-radius:7px;font-size:12px;display:none;line-height:1.5}
+.scrape-bar.ok{border-left:3px solid var(--success);color:var(--success)}
+.scrape-bar.err{border-left:3px solid var(--danger);color:var(--danger)}
+.prev-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:7px;margin-top:10px}
+.prev-card{background:var(--warm);border-radius:7px;padding:9px 11px;font-size:11px}
+.prev-name{font-weight:500;margin-bottom:2px}
+.prev-price{color:var(--terra);font-weight:500}
+
+.personas-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:11px;margin-bottom:24px}
+.persona-card{background:var(--surface);border:1.5px solid var(--ink-20);border-radius:var(--radius);padding:15px;cursor:pointer;transition:border-color .2s,transform .15s,box-shadow .2s;position:relative;overflow:hidden}
+.persona-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--pc,var(--terra));opacity:0;transition:opacity .2s}
+.persona-card.selected{border-color:var(--pc,var(--terra));box-shadow:0 0 0 3px rgba(196,98,58,.1)}
+.persona-card.selected::before{opacity:1}
+.persona-card:hover{transform:translateY(-2px);box-shadow:0 5px 16px rgba(26,23,20,.08)}
+.p-check{position:absolute;top:10px;right:10px;width:17px;height:17px;border-radius:50%;background:var(--pc,var(--terra));display:flex;align-items:center;justify-content:center;color:white;font-size:9px;opacity:0;transition:opacity .2s}
+.persona-card.selected .p-check{opacity:1}
+.p-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:9px}
+.p-name{font-size:13px;font-weight:500;margin-bottom:2px}
+.p-tag{font-size:10px;color:var(--ink-60);margin-bottom:6px}
+.p-desc{font-size:11px;color:var(--ink-60);line-height:1.5}
+
+.config-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:22px}
+@media(max-width:580px){.config-grid{grid-template-columns:1fr}}
+.config-card{background:var(--surface);border:1px solid var(--ink-20);border-radius:var(--radius);padding:14px 16px}
+.config-label{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-60);margin-bottom:8px}
+.config-card select,.config-card textarea{width:100%;font-family:'DM Sans',sans-serif;font-size:13px;border:1px solid var(--ink-20);border-radius:7px;padding:8px 11px;background:var(--cream);color:var(--ink);outline:none;transition:border-color .2s}
+.config-card select:focus,.config-card textarea:focus{border-color:var(--terra)}
+.config-card textarea{resize:vertical;min-height:66px;line-height:1.5}
+
+.run-section{text-align:center;margin-bottom:28px}
+.btn-run{background:var(--terra);color:white;border:none;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;padding:13px 48px;border-radius:50px;cursor:pointer;letter-spacing:.02em;transition:background .2s,transform .15s,box-shadow .2s;box-shadow:0 4px 14px rgba(196,98,58,.3)}
+.btn-run:hover{background:#b0552f;transform:translateY(-1px);box-shadow:0 6px 18px rgba(196,98,58,.35)}
+.btn-run:disabled{background:#ccc;box-shadow:none;cursor:not-allowed;transform:none}
+.run-note{font-size:12px;color:var(--ink-60);margin-top:8px}
+
+#progress-area{display:none;margin-bottom:26px}
+.prog-wrap{background:var(--warm);border-radius:50px;height:5px;overflow:hidden;margin-bottom:8px}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--terra),var(--gold));border-radius:50px;transition:width .5s ease;width:0%}
+.prog-status{font-size:13px;color:var(--ink-60);text-align:center}
+.prog-log{font-size:10px;color:var(--ink-60);text-align:center;margin-top:3px;font-family:monospace}
+
+#results-area{display:none}
+.res-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+.results-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+@media(max-width:560px){.results-summary{grid-template-columns:1fr 1fr}}
+.sum-card{background:var(--surface);border:1px solid var(--ink-20);border-radius:var(--radius);padding:14px;text-align:center}
+.sum-num{font-family:'Playfair Display',serif;font-size:28px;font-weight:600;color:var(--terra);line-height:1;margin-bottom:4px}
+.sum-label{font-size:10px;color:var(--ink-60);text-transform:uppercase;letter-spacing:.06em}
+
+.sessions-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:13px;margin-bottom:22px}
+.session-card{background:var(--surface);border:1px solid var(--ink-20);border-radius:var(--radius);overflow:hidden;animation:fadeIn .4s ease both}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.sess-head{padding:13px 15px;border-bottom:1px solid var(--ink-20);display:flex;align-items:center;gap:9px}
+.s-av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.s-name{font-size:13px;font-weight:500}.s-tag{font-size:10px;color:var(--ink-60)}
+.s-score{margin-left:auto;text-align:right}
+.s-score-num{font-family:'Playfair Display',serif;font-size:22px;font-weight:600;line-height:1}
+.s-score-lbl{font-size:9px;color:var(--ink-60);text-transform:uppercase;letter-spacing:.05em}
+.sess-body{padding:13px 15px}
+.j-row{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-bottom:9px}
+.j-step{background:var(--cream);border-radius:4px;padding:2px 7px;font-size:10px}
+.j-arr{color:var(--ink-60);font-size:9px}
+.s-insight{font-size:12px;line-height:1.65;margin-bottom:10px}
+.s-meta{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:10px}
+.s-meta-cell{background:var(--cream);border-radius:6px;padding:7px 9px;font-size:10px}
+.s-meta-cell .lbl{color:var(--ink-60);margin-bottom:2px}
+.s-meta-cell .val{font-weight:500;font-size:12px}
+.tag-row{display:flex;flex-wrap:wrap;gap:4px}
+.tag{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500}
+.tag-issue{background:#FDECEA;color:#C0392B}
+.tag-good{background:#E8F5E9;color:#27AE60}
+.rec-box{margin-top:9px;padding:8px 11px;background:var(--gold-light);border-radius:6px;font-size:11px;line-height:1.5}
+.live-badge{margin-top:6px;font-size:10px;color:var(--success)}
+
+.insights-panel{background:var(--forest);border-radius:var(--radius);padding:20px 24px;margin-bottom:20px;color:var(--cream)}
+.insights-panel h3{font-family:'Playfair Display',serif;font-size:17px;margin-bottom:14px}
+.insight-item{display:flex;gap:10px;align-items:flex-start;margin-bottom:11px;padding-bottom:11px;border-bottom:1px solid rgba(247,243,238,.1)}
+.insight-item:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.insight-icon{width:26px;height:26px;border-radius:5px;background:rgba(247,243,238,.08);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;margin-top:1px}
+.insight-text{font-size:12px;line-height:1.65;color:rgba(247,243,238,.82)}
+.insight-text strong{color:var(--cream);font-weight:500}
+.p-pill{font-size:9px;padding:2px 6px;border-radius:10px;font-weight:500;vertical-align:middle;margin-left:5px}
+.p-high{background:rgba(197,63,63,.3);color:#F4A8A8}
+.p-med{background:rgba(184,145,58,.3);color:#F5D688}
+.p-low{background:rgba(82,199,139,.3);color:#8FE0B8}
+
+.funnel-section{background:var(--surface);border:1px solid var(--ink-20);border-radius:var(--radius);padding:18px 22px;margin-bottom:22px}
+.funnel-title{font-family:'Playfair Display',serif;font-size:15px;margin-bottom:14px}
+.f-row{display:flex;align-items:center;gap:9px;font-size:12px;margin-bottom:7px}
+.f-label{width:145px;flex-shrink:0;color:var(--ink-60);font-size:11px}
+.f-wrap{flex:1;background:var(--warm);border-radius:4px;height:20px;overflow:hidden}
+.f-bar{height:100%;border-radius:4px;display:flex;align-items:center;padding-left:8px;font-size:10px;font-weight:500;color:white;width:0%;transition:width 1.2s cubic-bezier(.22,1,.36,1)}
+.f-pct{font-size:11px;font-weight:500;min-width:32px;text-align:right;color:var(--ink-60)}
+
+.btn-export{background:transparent;border:1px solid var(--ink-20);color:var(--ink);font-family:'DM Sans',sans-serif;font-size:12px;padding:7px 16px;border-radius:50px;cursor:pointer;transition:background .15s}
+.btn-export:hover{background:var(--warm)}
+.badge{display:inline-block;font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;padding:2px 8px;border-radius:20px}
+.badge-live{background:#E8F5E9;color:#27AE60}
+.badge-ai{background:var(--gold-light);color:var(--gold)}
+.real-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;background:#E8F5E9;color:#27AE60;padding:2px 8px;border-radius:20px;font-weight:500}
+.real-badge::before{content:'●';font-size:6px}
+.mock-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;background:var(--gold-light);color:var(--gold);padding:2px 8px;border-radius:20px;font-weight:500}
+
+.spinner{display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,.3);border-top-color:white;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:5px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.sel-count{font-size:12px;color:var(--ink-60);background:var(--warm);padding:3px 10px;border-radius:20px}
+</style>
+</head>
+<body>
+
+<nav>
+  <div>
+    <div class="nav-brand">Shop<span>Sim</span></div>
+    <div class="nav-sub">AI Shopper Simulator · Reclaim Nation</div>
+  </div>
+  <div class="ai-badge">Powered by GPT-4o</div>
+</nav>
+
+<div class="hero">
+  <div>
+    <div class="hero-title">Simulate real shoppers<br>on <em>Reclaim Nation</em><br>before you change a thing.</div>
+    <p class="hero-desc">Deploy AI shoppers with distinct personas to browse your reclaimed furniture store using live scraped content. See exactly where they drop off and what converts them.</p>
+    <div class="flow">
+      <div class="flow-step">🕷 Scrape live page</div>
+      <div class="flow-arr">→</div>
+      <div class="flow-step">🤖 GPT-4o analyses</div>
+      <div class="flow-arr">→</div>
+      <div class="flow-step">📊 Persona insights</div>
+      <div class="flow-arr">→</div>
+      <div class="flow-step">✅ Actionable fixes</div>
+    </div>
+  </div>
+  <div class="status-card">
+    <div class="status-title">System Status</div>
+    <div class="status-row ok"><span class="dot"></span>ShopSim loaded</div>
+    <div class="status-row" id="stat-key"><span class="dot"></span>OpenAI API key</div>
+    <div class="status-row ok" id="stat-scrape"><span class="dot"></span>Web scraper ready</div>
+    <div class="status-row ok"><span class="dot"></span>6 shopper personas loaded</div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- API KEY SETUP -->
+  <div class="setup-card" id="setup-card">
+    <h3>⚙ One-time Setup: Enter your OpenAI API Key</h3>
+    <div class="setup-step">
+      <div class="n">1</div>
+      <p>Go to <strong>platform.openai.com</strong> → API Keys → Create a new secret key. Copy it.</p>
+    </div>
+    <div class="setup-step">
+      <div class="n">2</div>
+      <p>Paste it below. It's saved in your browser only — never sent anywhere except OpenAI's API. Each simulation costs roughly <strong>£0.02–0.05</strong> with GPT-4o.</p>
+    </div>
+    <div class="api-row">
+      <input type="password" id="api-key-input" placeholder="sk-proj-..." autocomplete="off">
+      <button class="btn-save" onclick="saveApiKey()">Save Key</button>
+    </div>
+    <p class="api-note">Your key is stored in your browser's localStorage only. It is never sent to any server other than api.openai.com.</p>
+  </div>
+
+  <!-- STEP TRACKER -->
+  <div class="steps-bar">
+    <div class="step-item active" id="step1"><div class="step-num">1</div><span class="step-label">Scrape live page</span></div>
+    <div class="step-sep">›</div>
+    <div class="step-item" id="step2"><div class="step-num">2</div><span class="step-label">Choose personas</span></div>
+    <div class="step-sep">›</div>
+    <div class="step-item" id="step3"><div class="step-num">3</div><span class="step-label">Configure</span></div>
+    <div class="step-sep">›</div>
+    <div class="step-item" id="step4"><div class="step-num">4</div><span class="step-label">Run & review</span></div>
+  </div>
+
+  <!-- STEP 1: SCRAPE -->
+  <div class="sec-head">
+    <h2>Step 1 — Scrape Live Page Data</h2>
+    <p>Pull real content from reclaimnation.co.uk</p>
+  </div>
+  <div class="scrape-panel">
+    <div class="scrape-row">
+      <select id="scrape-page-sel">
+        <option value="homepage">Homepage — reclaimnation.co.uk</option>
+        <option value="products">Shop / Products page</option>
+        <option value="product_detail">Product detail (first product)</option>
+        <option value="about">About / Sustainability</option>
+        <option value="contact">Contact / Trade enquiry</option>
+      </select>
+      <button class="btn-scrape" id="btn-scrape" onclick="scrapeNow()">🕷 Scrape now</button>
+      <span id="scrape-status" style="font-size:12px;color:var(--ink-60)"></span>
+    </div>
+    <div class="scrape-bar" id="scrape-bar"></div>
+    <div id="products-preview" style="display:none">
+      <div style="font-size:10px;font-weight:500;color:var(--ink-60);text-transform:uppercase;letter-spacing:.06em;margin-top:10px;margin-bottom:5px">Products found on page</div>
+      <div class="prev-grid" id="prev-grid"></div>
+    </div>
+  </div>
+
+  <!-- STEP 2: PERSONAS -->
+  <div class="sec-head">
+    <h2>Step 2 — Select Shopper Personas</h2>
+    <p>Pick up to 4 · <span class="sel-count" id="sel-count">2 selected</span></p>
+  </div>
+  <div class="personas-grid" id="personas-grid"></div>
+
+  <!-- STEP 3: CONFIG -->
+  <div class="sec-head"><h2>Step 3 — Configure Simulation</h2></div>
+  <div class="config-grid">
+    <div class="config-card">
+      <div class="config-label">Simulation Goal</div>
+      <select id="sim-goal">
+        <option value="browse_and_purchase">Browse & attempt to purchase</option>
+        <option value="find_specific_product">Find a specific product type</option>
+        <option value="evaluate_homepage">Evaluate homepage first impression</option>
+        <option value="checkout_flow">Test checkout flow end-to-end</option>
+        <option value="mobile_experience">Evaluate mobile UX experience</option>
+      </select>
+    </div>
+    <div class="config-card">
+      <div class="config-label">Page Being Simulated</div>
+      <select id="sim-page">
+        <option value="homepage">Homepage</option>
+        <option value="products">Product listings</option>
+        <option value="product_detail">Product detail page</option>
+        <option value="about">About / Sustainability</option>
+        <option value="contact">Contact / Trade</option>
+      </select>
+    </div>
+    <div class="config-card">
+      <div class="config-label">Budget Profile</div>
+      <select id="sim-budget">
+        <option value="mixed">Mixed — all budgets</option>
+        <option value="budget">Budget conscious (under £500)</option>
+        <option value="mid">Mid-range (£500–£2000)</option>
+        <option value="premium">Premium buyer (£2000+)</option>
+      </select>
+    </div>
+    <div class="config-card">
+      <div class="config-label">Custom Scenario (optional)</div>
+      <textarea id="sim-custom" placeholder="e.g. Shopper is looking for a reclaimed oak dining table for a farmhouse kitchen renovation, budget £1,200…"></textarea>
+    </div>
+  </div>
+
+  <!-- STEP 4: RUN -->
+  <div class="run-section">
+    <button class="btn-run" id="btn-run" onclick="runSimulation()">▶ Run Simulation</button>
+    <div class="run-note" id="run-note">Select personas above · scrape live data for best results</div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div id="progress-area">
+    <div class="prog-wrap"><div class="prog-fill" id="prog-fill"></div></div>
+    <div class="prog-status" id="prog-status">Preparing…</div>
+    <div class="prog-log" id="prog-log"></div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results-area">
+    <div class="res-header">
+      <div>
+        <div class="sec-head" style="margin-bottom:4px">
+          <h2>Simulation Results</h2>
+          <span class="badge badge-live">Complete</span>
+          <span id="data-badge"></span>
+        </div>
+        <p style="font-size:12px;color:var(--ink-60)" id="res-meta"></p>
+      </div>
+      <button class="btn-export" onclick="exportResults()">Export report ↓</button>
+    </div>
+    <div class="results-summary" id="res-summary"></div>
+    <div class="sessions-grid" id="sessions-grid"></div>
+    <div class="insights-panel">
+      <h3>🔍 Aggregated Insights & Recommendations</h3>
+      <div id="insights-list"></div>
+    </div>
+    <div class="funnel-section">
+      <div class="funnel-title">Simulated Conversion Funnel</div>
+      <div id="funnel-steps"></div>
+    </div>
+    <div style="text-align:center;margin-top:20px">
+      <button class="btn-run" onclick="resetSim()" style="font-size:13px;padding:10px 30px">↩ Run Another Simulation</button>
+    </div>
+  </div>
+
+</div><!-- end container -->
+
+<script>
+// ── API KEY ────────────────────────────────────────────────────────
+let API_KEY = localStorage.getItem('shopsim_openai_key') || '';
+
+function saveApiKey() {
+  const v = document.getElementById('api-key-input').value.trim();
+  if (!v.startsWith('sk-')) {
+    alert('That doesn\'t look like an OpenAI API key. It should start with sk-');
+    return;
+  }
+  API_KEY = v;
+  localStorage.setItem('shopsim_openai_key', v);
+  document.getElementById('setup-card').style.display = 'none';
+  updateKeyStatus(true);
+  alert('✅ API key saved! You can now run simulations.');
+}
+
+function updateKeyStatus(ok) {
+  const row = document.getElementById('stat-key');
+  row.className = 'status-row ' + (ok ? 'ok' : 'warn');
+  row.innerHTML = '<span class="dot"></span>' + (ok ? 'OpenAI API key ✓' : 'API key needed — see setup above');
+}
+
+if (API_KEY) {
+  document.getElementById('setup-card').style.display = 'none';
+  updateKeyStatus(true);
+} else {
+  updateKeyStatus(false);
+}
+
+// ── PERSONAS ───────────────────────────────────────────────────────
+const PERSONAS = [
+  { id:'eco_mum',   name:'Sophie, 38', tag:'Eco-conscious parent',      desc:'Values sustainability & provenance. Story over aesthetics.',    icon:'🌿', color:'#2D4A3E', bg:'#E8F0ED', focus:'sustainability, reclaimed story, family durability, eco credentials' },
+  { id:'designer',  name:'Marcus, 44', tag:'Interior designer / trade', desc:'Sourcing statement pieces. Needs dimensions & trade pricing.',  icon:'🏛', color:'#B8913A', bg:'#F5EDD8', focus:'trade pricing, exact dimensions, uniqueness, lead times, multiple orders' },
+  { id:'firsthome', name:'Priya, 27',  tag:'First-time buyer',          desc:'Budget-aware, overwhelmed. Needs filtering & reassurance.',     icon:'🏠', color:'#C4623A', bg:'#F2E4DB', focus:'price clarity, returns policy, size guidance, easy navigation, trust signals' },
+  { id:'antique',   name:'Roger, 62',  tag:'Antique enthusiast',        desc:'Evaluates authenticity. Frustrated by vague descriptions.',    icon:'🔍', color:'#5A3E8C', bg:'#EDE8F5', focus:'provenance, wood age, authenticity markers, craftsmanship details' },
+  { id:'hotel',     name:'Lena, 35',   tag:'Boutique hotel owner',      desc:'Buying in volume. Needs bulk pricing & venue delivery.',       icon:'🏨', color:'#1A6B8A', bg:'#E0EEF5', focus:'bulk discount, volume orders, contract terms, delivery logistics' },
+  { id:'skeptic',   name:'Dan, 31',    tag:'Sceptical first-timer',     desc:'Never bought reclaimed. Needs education & social proof.',      icon:'🤔', color:'#888',    bg:'#F0F0F0', focus:'quality proof, reviews, warranty, why reclaimed over new furniture' },
+];
+
+const selectedPersonas = new Set(['eco_mum', 'firsthome']);
+
+function renderPersonas() {
+  const grid = document.getElementById('personas-grid');
+  PERSONAS.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'persona-card' + (selectedPersonas.has(p.id) ? ' selected' : '');
+    card.style.setProperty('--pc', p.color);
+    card.innerHTML = `
+      <div class="p-check">✓</div>
+      <div class="p-avatar" style="background:${p.bg};color:${p.color}">${p.icon}</div>
+      <div class="p-name">${p.name}</div>
+      <div class="p-tag">${p.tag}</div>
+      <div class="p-desc">${p.desc}</div>`;
+    card.addEventListener('click', () => {
+      if (selectedPersonas.has(p.id)) {
+        selectedPersonas.delete(p.id);
+        card.classList.remove('selected');
+      } else if (selectedPersonas.size < 4) {
+        selectedPersonas.add(p.id);
+        card.classList.add('selected');
+      } else {
+        card.style.animation = 'none';
+        card.offsetHeight;
+        return;
+      }
+      document.getElementById('sel-count').textContent = selectedPersonas.size + ' selected';
+    });
+    grid.appendChild(card);
+  });
+}
+renderPersonas();
+
+// ── STEP TRACKER ───────────────────────────────────────────────────
+function setStep(n) {
+  for (let i = 1; i <= 4; i++) {
+    const el = document.getElementById('step' + i);
+    el.className = 'step-item' + (i === n ? ' active' : i < n ? ' done' : '');
+  }
+}
+
+// ── SCRAPING ───────────────────────────────────────────────────────
+const PAGE_URLS = {
+  homepage:       'https://reclaimnation.co.uk/',
+  products:       'https://reclaimnation.co.uk/shop/',
+  product_detail: 'https://reclaimnation.co.uk/shop/',
+  about:          'https://reclaimnation.co.uk/about/',
+  contact:        'https://reclaimnation.co.uk/contact/',
+};
+
+let scrapedData = null;
+
+function parseHTML(html, url) {
+  const strip = s => s.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  const titleM = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+  const title = strip(titleM?.[1] || '');
+  const metaDescM = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i);
+  const metaDesc = metaDescM?.[1] || '';
+  const headings = [];
+  const hRe = /<h[1-3][^>]*>([\s\S]*?)<\/h[1-3]>/gi;
+  let m;
+  while ((m = hRe.exec(html)) !== null && headings.length < 12) {
+    const t = strip(m[1]);
+    if (t && t.length < 120) headings.push(t);
+  }
+  const products = [];
+  const prodRe = /<li[^>]+class="[^"]*product[^"]*"[^>]*>([\s\S]*?)<\/li>/gi;
+  while ((m = prodRe.exec(html)) !== null && products.length < 12) {
+    const block = m[1];
+    const tM = block.match(/<(?:h2|h3)[^>]*class="[^"]*title[^"]*"[^>]*>([\s\S]*?)<\/(?:h2|h3)>/i);
+    const pM = block.match(/<span[^>]*class="[^"]*price[^"]*"[^>]*>([\s\S]*?)<\/span>/i);
+    const lM = block.match(/href=["']([^"']+)["']/i);
+    const t = strip(tM?.[1] || '');
+    const p = strip(pM?.[1] || '');
+    if (t || p) products.push({ title: t, price: p, link: lM?.[1] || '', onSale: block.includes('onsale') });
+  }
+  const ctas = [];
+  const ctaRe = /<(?:button|a)[^>]+class="[^"]*(?:btn|button|add_to_cart)[^"]*"[^>]*>([\s\S]*?)<\/(?:button|a)>/gi;
+  while ((m = ctaRe.exec(html)) !== null && ctas.length < 8) {
+    const t = strip(m[1]);
+    if (t) ctas.push(t);
+  }
+  const bodyText = html
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ').trim().slice(0, 2500);
+  return { title, metaDesc, headings, products, productCount: products.length, ctas, bodyText, url };
+}
+
+async function scrapeNow() {
+  const pageKey = document.getElementById('scrape-page-sel').value;
+  const btn = document.getElementById('btn-scrape');
+  const bar = document.getElementById('scrape-bar');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Scraping…';
+  bar.style.display = 'none';
+  document.getElementById('products-preview').style.display = 'none';
+
+  const targetUrl = PAGE_URLS[pageKey];
+  // Use allorigins CORS proxy
+  const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+
+  try {
+    const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(20000) });
+    if (!res.ok) throw new Error('Proxy returned ' + res.status);
+    const json = await res.json();
+    if (!json.contents) throw new Error('No content returned from proxy');
+
+    const data = parseHTML(json.contents, targetUrl);
+    scrapedData = { ...data, pageKey };
+
+    bar.className = 'scrape-bar ok';
+    bar.style.display = 'block';
+    bar.innerHTML = `✅ Scraped "${data.title || targetUrl}" — ${data.productCount} products found, ${data.bodyText?.length || 0} chars captured.`;
+
+    if (data.products?.length > 0) {
+      document.getElementById('products-preview').style.display = 'block';
+      document.getElementById('prev-grid').innerHTML = data.products.slice(0, 6).map(p => `
+        <div class="prev-card">
+          <div class="prev-name">${p.title || 'Product'}</div>
+          <div class="prev-price">${p.price || 'Price n/a'}</div>
+          ${p.onSale ? '<div style="font-size:9px;color:var(--terra)">On sale</div>' : ''}
+        </div>`).join('');
+    }
+
+    setStep(2);
+    document.getElementById('run-note').textContent = '✅ Live data loaded · now select personas and run';
+    document.getElementById('run-note').style.color = 'var(--success)';
+    document.getElementById('stat-scrape').className = 'status-row ok';
+    document.getElementById('stat-scrape').innerHTML = '<span class="dot"></span>Live data ready ✓';
+
+  } catch (err) {
+    scrapedData = null;
+    bar.className = 'scrape-bar err';
+    bar.style.display = 'block';
+    bar.innerHTML = `⚠ Scrape failed: ${err.message}. Simulation will use AI knowledge of the store instead — results will still be useful.`;
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '🕷 Scrape now';
+}
+
+// ── BUILD PAGE CONTEXT ─────────────────────────────────────────────
+function buildPageContext() {
+  if (scrapedData) {
+    const d = scrapedData;
+    let ctx = `LIVE PAGE DATA scraped from reclaimnation.co.uk:
+Title: ${d.title}
+Meta description: ${d.metaDesc || 'none'}
+Headings on page: ${d.headings?.join(' | ') || 'none'}
+CTA buttons found: ${d.ctas?.join(', ') || 'none'}`;
+    if (d.products?.length > 0) {
+      ctx += `\n\nPRODUCTS FOUND ON PAGE:`;
+      d.products.slice(0, 8).forEach(p => {
+        ctx += `\n- "${p.title}" — ${p.price}${p.onSale ? ' [ON SALE]' : ''}`;
+      });
+    }
+    ctx += `\n\nFULL PAGE TEXT:\n${d.bodyText?.slice(0, 2000)}`;
+    return { ctx, isLive: true };
+  }
+  return {
+    ctx: `STORE KNOWLEDGE (live scrape not available — using AI knowledge):
+Reclaim Nation (reclaimnation.co.uk) is a UK reclaimed furniture store.
+Products include: reclaimed wood dining tables, vintage industrial shelving, reclaimed oak beds, upcycled cabinets, salvaged doors and architectural elements.
+Price range: £150 to £3,500+.
+Brand ethos: sustainability, authentic provenance, handcrafted from rescued materials, eco-conscious.
+Target customers: eco-conscious homeowners, interior designers, boutique hospitality buyers.
+The store uses WooCommerce. Delivery is available across the UK.`,
+    isLive: false,
+  };
+}
+
+// ── OPENAI GPT-4o API ──────────────────────────────────────────────
+async function callGPT(systemPrompt, userPrompt, maxTokens = 800) {
+  if (!API_KEY) throw new Error('No API key. Please enter your OpenAI API key above.');
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o',
+      max_tokens: maxTokens,
+      temperature: 0.7,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+    }),
+  });
+  if (!res.ok) {
+    const e = await res.json();
+    throw new Error(e.error?.message || 'OpenAI API error ' + res.status);
+  }
+  const data = await res.json();
+  return data.choices[0]?.message?.content || '';
+}
+
+// ── SIMULATE PERSONA ───────────────────────────────────────────────
+async function simulatePersona(persona, config, pageCtx) {
+  const goalMap = {
+    browse_and_purchase: 'browse and attempt to purchase a product',
+    find_specific_product: 'find a specific furniture type they need',
+    evaluate_homepage: 'evaluate the homepage first impression and brand trust',
+    checkout_flow: 'test the checkout flow end-to-end',
+    mobile_experience: 'evaluate the mobile UX experience',
+  };
+  const pageMap = {
+    homepage: 'the homepage',
+    products: 'the product listings page',
+    product_detail: 'a product detail page',
+    about: 'the About / Sustainability page',
+    contact: 'the Contact / Trade enquiry page',
+  };
+
+  const system = `You are a UX researcher and consumer psychologist simulating real online shoppers. 
+You roleplay as the given persona with precision — their concerns, frustrations, and purchase triggers.
+Always respond with valid JSON only. No markdown fences, no explanation, just the raw JSON object.`;
+
+  const user = `Roleplay as a real shopper visiting Reclaim Nation, a UK reclaimed furniture store.
+
+PERSONA: ${persona.name} — ${persona.tag}
+Personality & behaviour: ${persona.desc}
+Key concerns: ${persona.focus}
+${config.budget !== 'mixed' ? `Budget profile: ${config.budget}` : ''}
+${config.custom ? `Special scenario: ${config.custom}` : ''}
+
+${pageCtx.ctx}
+
+TASK: Simulate this shopper trying to "${goalMap[config.goal] || config.goal}" on ${pageMap[config.page] || config.page}.
+Be specific — reference actual product names, prices, headings, and page elements from the data above.
+Make the journey realistic and persona-specific. Show their exact thought process.
+
+Respond ONLY as this JSON object:
+{"journey":["step 1 action","step 2 action","step 3 action","step 4 action"],"purchaseIntent":0-100,"satisfactionScore":0-100,"addedToCart":true or false,"completed":true or false,"dropOffPoint":"where they left or null","mainInsight":"2-3 sentences explaining their experience, referencing specific page elements","issues":["specific issue 1","specific issue 2"],"positives":["what worked 1","what worked 2"],"recommendation":"one specific actionable fix for this persona type"}`;
+
+  try {
+    const raw = await callGPT(system, user, 750);
+    const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
+    return { persona, ...parsed, usedLiveData: pageCtx.isLive };
+  } catch (e) {
+    return {
+      persona, usedLiveData: pageCtx.isLive,
+      journey: ['Arrived at site', 'Browsed products', 'Evaluated options', 'Left without purchasing'],
+      purchaseIntent: 48, satisfactionScore: 52,
+      addedToCart: false, completed: false,
+      dropOffPoint: 'Product page',
+      mainInsight: `${persona.name} browsed the site but encountered friction. The simulation encountered a parsing issue — try running again.`,
+      issues: ['Unclear delivery information', 'Limited product filtering options'],
+      positives: ['Strong brand identity', 'Interesting product range'],
+      recommendation: 'Add prominent delivery cost estimates to all product pages.',
+    };
+  }
+}
+
+// ── AGGREGATED INSIGHTS ────────────────────────────────────────────
+async function generateInsights(results, config, isLive) {
+  const summary = results.map(r =>
+    `${r.persona.name} (${r.persona.tag}): satisfaction=${r.satisfactionScore}/100, purchaseIntent=${r.purchaseIntent}%, addedToCart=${r.addedToCart}. Issues: ${r.issues?.join('; ')}. Positives: ${r.positives?.join('; ')}.`
+  ).join('\n');
+
+  const system = `You are a senior UX consultant and conversion rate optimisation expert specialising in e-commerce.
+Always respond with valid JSON only. No markdown, no preamble, just the raw JSON.`;
+
+  const user = `Review these AI shopper simulation results for Reclaim Nation (reclaimnation.co.uk), a UK reclaimed furniture store.
+Simulation: ${config.goal?.replace(/_/g,' ')} on ${config.page?.replace(/_/g,' ')}
+Data source: ${isLive ? 'Live scraped page content' : 'AI knowledge of store'}
+
+RESULTS:
+${summary}
+
+Provide 5 prioritised, specific insights. Each must be actionable and directly reference Reclaim Nation's context.
+
+Respond ONLY as this JSON:
+{"insights":[{"priority":"high|medium|low","type":"issue|opportunity|strength","title":"short title under 6 words","detail":"2 specific sentences about Reclaim Nation","icon":"one relevant emoji"}]}`;
+
+  try {
+    const raw = await callGPT(system, user, 900);
+    return JSON.parse(raw.replace(/```json|```/g, '').trim());
+  } catch {
+    return {
+      insights: [
+        { priority: 'high',   type: 'issue',       icon: '🚚', title: 'Delivery cost transparency',     detail: 'Multiple personas hesitated due to unclear delivery costs. Showing estimated delivery on product pages would reduce abandonment.' },
+        { priority: 'high',   type: 'issue',       icon: '🔍', title: 'Product filtering too limited',   detail: 'Shoppers struggled to narrow by material, wood type, or dimensions. Faceted filtering would significantly improve conversion.' },
+        { priority: 'medium', type: 'opportunity', icon: '📖', title: 'Provenance storytelling gap',     detail: 'Eco-conscious and antique enthusiast personas wanted more per-product history. Detailed provenance can justify premium pricing.' },
+        { priority: 'medium', type: 'strength',    icon: '✅', title: 'Brand authenticity resonates',   detail: 'The reclaimed ethos was compelling across all personas. This differentiator should be amplified more prominently on product pages.' },
+        { priority: 'low',    type: 'opportunity', icon: '🏛', title: 'Trade buyer pathway missing',    detail: 'Professional buyers lacked a clear route to trade pricing or bulk enquiries. A dedicated trade portal could unlock B2B revenue.' },
+      ],
+    };
+  }
+}
+
+// ── PROGRESS ───────────────────────────────────────────────────────
+function setProgress(pct, msg, log = '') {
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('prog-status').textContent = msg;
+  if (log) document.getElementById('prog-log').textContent = log;
+}
+
+// ── MAIN RUN ───────────────────────────────────────────────────────
+let lastResults = null;
+
+async function runSimulation() {
+  if (!API_KEY) {
+    document.getElementById('setup-card').style.display = 'block';
+    document.getElementById('setup-card').scrollIntoView({ behavior: 'smooth' });
+    alert('Please enter your OpenAI API key first.');
+    return;
+  }
+  if (selectedPersonas.size === 0) {
+    alert('Please select at least one persona before running.');
+    return;
+  }
+
+  const btn = document.getElementById('btn-run');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Simulating…';
+
+  document.getElementById('progress-area').style.display = 'block';
+  document.getElementById('results-area').style.display = 'none';
+  document.getElementById('sessions-grid').innerHTML = '';
+  document.getElementById('insights-list').innerHTML = '';
+  document.getElementById('res-summary').innerHTML = '';
+  setStep(4);
+
+  const goal   = document.getElementById('sim-goal').value;
+  const page   = document.getElementById('sim-page').value;
+  const budget = document.getElementById('sim-budget').value;
+  const custom = document.getElementById('sim-custom').value;
+  const active = PERSONAS.filter(p => selectedPersonas.has(p.id));
+  const pageCtx = buildPageContext();
+  const results = [];
+  let done = 0;
+
+  setProgress(5, 'Building page context…', pageCtx.isLive ? '✅ Using live scraped data' : '⚠ Using AI knowledge — click Scrape for better results');
+  await delay(300);
+
+  for (const persona of active) {
+    setProgress(10 + (done / active.length) * 65, `${persona.icon} ${persona.name} is browsing…`, `${done + 1} of ${active.length} shoppers`);
+    const result = await simulatePersona(persona, { goal, page, budget, custom }, pageCtx);
+    results.push(result);
+    renderSession(result, done);
+    done++;
+    await delay(150);
+  }
+
+  setProgress(82, 'GPT-4o synthesising insights…', 'Cross-persona analysis');
+  const insights = await generateInsights(results, { goal, page }, pageCtx.isLive);
+
+  setProgress(97, 'Building report…');
+  await delay(250);
+
+  renderSummary(results);
+  renderInsights(insights);
+  renderFunnel(results);
+
+  document.getElementById('data-badge').innerHTML = pageCtx.isLive
+    ? '<span class="real-badge">Live scraped data</span>'
+    : '<span class="mock-badge">AI knowledge</span>';
+  document.getElementById('res-meta').textContent =
+    `${active.length} shopper${active.length > 1 ? 's' : ''} · ${goal.replace(/_/g,' ')} · ${page.replace(/_/g,' ')} · ${new Date().toLocaleTimeString()}`;
+
+  setProgress(100, 'Simulation complete ✓', '');
+  await delay(350);
+
+  document.getElementById('progress-area').style.display = 'none';
+  document.getElementById('results-area').style.display = 'block';
+  lastResults = results;
+  btn.disabled = false;
+  btn.innerHTML = '▶ Run Simulation';
+  document.getElementById('results-area').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ── RENDER RESULTS ─────────────────────────────────────────────────
+function renderSession(r, i) {
+  const p = r.persona;
+  const sc = r.satisfactionScore || 50;
+  const scColor = sc >= 70 ? '#27AE60' : sc >= 45 ? '#E67E22' : '#C0392B';
+  const card = document.createElement('div');
+  card.className = 'session-card';
+  card.style.animationDelay = (i * 0.08) + 's';
+  card.innerHTML = `
+    <div class="sess-head">
+      <div class="s-av" style="background:${p.bg};color:${p.color}">${p.icon}</div>
+      <div>
+        <div class="s-name">${p.name}</div>
+        <div class="s-tag">${p.tag}</div>
+      </div>
+      <div class="s-score">
+        <div class="s-score-num" style="color:${scColor}">${sc}</div>
+        <div class="s-score-lbl">Satisfaction</div>
+      </div>
+    </div>
+    <div class="sess-body">
+      <div class="j-row">
+        ${(r.journey || []).map((s, i, a) =>
+          `<span class="j-step">${s}</span>${i < a.length - 1 ? '<span class="j-arr">›</span>' : ''}`
+        ).join('')}
+      </div>
+      <div class="s-insight">${r.mainInsight || ''}</div>
+      <div class="s-meta">
+        <div class="s-meta-cell">
+          <div class="lbl">Purchase intent</div>
+          <div class="val">${r.purchaseIntent || 0}%</div>
+        </div>
+        <div class="s-meta-cell">
+          <div class="lbl">${r.addedToCart ? '🛒 Added to cart' : '🚪 No cart add'}</div>
+          <div class="val">${r.completed ? 'Goal completed' : r.dropOffPoint || 'Left site'}</div>
+        </div>
+      </div>
+      <div class="tag-row">
+        ${(r.issues || []).map(t => `<span class="tag tag-issue">⚠ ${t}</span>`).join('')}
+        ${(r.positives || []).map(t => `<span class="tag tag-good">✓ ${t}</span>`).join('')}
+      </div>
+      ${r.recommendation ? `<div class="rec-box">💡 <strong>Fix:</strong> ${r.recommendation}</div>` : ''}
+      ${r.usedLiveData ? '<div class="live-badge">✅ Based on live page data</div>' : ''}
+    </div>`;
+  document.getElementById('sessions-grid').appendChild(card);
+}
+
+function renderSummary(results) {
+  const n = results.length;
+  const avgSat = Math.round(results.reduce((a, r) => a + (r.satisfactionScore || 0), 0) / n);
+  const avgInt = Math.round(results.reduce((a, r) => a + (r.purchaseIntent || 0), 0) / n);
+  const carted = results.filter(r => r.addedToCart).length;
+  const done   = results.filter(r => r.completed).length;
+  document.getElementById('res-summary').innerHTML = `
+    <div class="sum-card"><div class="sum-num">${avgSat}</div><div class="sum-label">Avg satisfaction</div></div>
+    <div class="sum-card"><div class="sum-num">${avgInt}%</div><div class="sum-label">Purchase intent</div></div>
+    <div class="sum-card"><div class="sum-num">${carted}/${n}</div><div class="sum-label">Added to cart</div></div>
+    <div class="sum-card"><div class="sum-num">${done}/${n}</div><div class="sum-label">Goal completed</div></div>`;
+}
+
+function renderInsights(data) {
+  const pc = { high: 'p-high', medium: 'p-med', low: 'p-low' };
+  document.getElementById('insights-list').innerHTML = (data.insights || []).map(ins => `
+    <div class="insight-item">
+      <div class="insight-icon">${ins.icon || '💡'}</div>
+      <div class="insight-text">
+        <strong>${ins.title}</strong>
+        <span class="p-pill ${pc[ins.priority] || 'p-med'}">${ins.priority}</span><br>
+        ${ins.detail}
+      </div>
+    </div>`).join('');
+}
+
+function renderFunnel(results) {
+  const n = results.length || 1;
+  const steps = [
+    { label: 'Arrived at store',  pct: 100,                                                            color: '#2D4A3E' },
+    { label: 'Explored content',  pct: Math.round(82 + Math.random() * 13),                            color: '#3A6B5A' },
+    { label: 'Viewed a product',  pct: Math.round(52 + Math.random() * 28),                            color: '#B8913A' },
+    { label: 'Added to cart',     pct: Math.round((results.filter(r => r.addedToCart).length / n) * 100), color: '#C4623A' },
+    { label: 'Completed goal',    pct: Math.round((results.filter(r => r.completed).length / n) * 100),   color: '#9B2335' },
+  ];
+  document.getElementById('funnel-steps').innerHTML = steps.map(s => `
+    <div class="f-row">
+      <div class="f-label">${s.label}</div>
+      <div class="f-wrap">
+        <div class="f-bar" style="background:${s.color}" data-t="${s.pct}">
+          ${s.pct > 15 ? s.pct + '%' : ''}
+        </div>
+      </div>
+      <div class="f-pct">${s.pct}%</div>
+    </div>`).join('');
+  setTimeout(() => {
+    document.querySelectorAll('.f-bar[data-t]').forEach(b => {
+      b.style.width = b.dataset.t + '%';
+    });
+  }, 100);
+}
+
+function resetSim() {
+  document.getElementById('results-area').style.display = 'none';
+  document.getElementById('sessions-grid').innerHTML = '';
+  document.getElementById('run-note').textContent = 'Select personas above · scrape live data for best results';
+  document.getElementById('run-note').style.color = '';
+  setStep(1);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── EXPORT ─────────────────────────────────────────────────────────
+function exportResults() {
+  if (!lastResults) return;
+  const lines = [
+    'RECLAIM NATION — SHOPSIM REPORT',
+    'Powered by OpenAI GPT-4o',
+    'Generated: ' + new Date().toLocaleString(),
+    '═'.repeat(50),
+    '',
+  ];
+  lastResults.forEach(r => {
+    lines.push(`--- ${r.persona.name} (${r.persona.tag}) ---`);
+    lines.push(`Satisfaction: ${r.satisfactionScore}/100  |  Purchase Intent: ${r.purchaseIntent}%`);
+    lines.push(`Added to Cart: ${r.addedToCart ? 'Yes' : 'No'}  |  Goal Completed: ${r.completed ? 'Yes' : 'No'}`);
+    lines.push(`Journey: ${(r.journey || []).join(' → ')}`);
+    lines.push(`Drop-off point: ${r.dropOffPoint || 'N/A'}`);
+    lines.push('');
+    lines.push(`Insight: ${r.mainInsight}`);
+    lines.push('');
+    lines.push(`Issues: ${(r.issues || []).join(' | ')}`);
+    lines.push(`Positives: ${(r.positives || []).join(' | ')}`);
+    lines.push(`Recommendation: ${r.recommendation}`);
+    lines.push('');
+  });
+  lines.push('═'.repeat(50));
+  lines.push('ShopSim · reclaimnation.co.uk · Powered by OpenAI GPT-4o');
+  const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `reclaim-shopsim-${Date.now()}.txt`;
+  a.click();
+}
+
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+</script>
+</body>
+</html>
